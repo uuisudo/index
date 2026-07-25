@@ -717,8 +717,8 @@ function obfuscate(src){
   if(opts.multilayer&&iv>=2) finalCode=wrapLayers(vmCode,iv===3?2:1);
 
   // 7. Assemble output
-  let out=`-- [[ Ruey Obfuscator v1.07 | ${randHex(20)} | ${new Date().toISOString()} ]]\n`;
-  out+=`-- [[ Protected by belle.sg | Triple XOR + Inline String IIFEs + No Global Writes + Random Opcodes + Anti-Dump ]]\n\n`;
+  let out=`-- [[ Anony hub Obfuscator v1.07 | ${randHex(20)} | ${new Date().toISOString()} ]]\n`;
+  out+=`-- [[ Protected by Anonyhub | Triple XOR + Inline String IIFEs + No Global Writes + Random Opcodes + Anti-Dump ]]\n\n`;
 
   if(opts.antitamper) out+=genAntiTamper()+'\n\n';
   if(opts.junk)       out+=genJunk(iv)+'\n\n';
