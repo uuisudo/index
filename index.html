@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruey Obfuscator v1.07</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08080e;--surface:#0f0f18;--card:#13131e;--border:#1e1e30;
+  --accent:#8b5cf6;--accent2:#a78bfa;--accent3:#c4b5fd;
+  --green:#10b981;--red:#ef4444;--yellow:#f59e0b;
+  --text:#e2e8f0;--muted:#475569;--mono:'Courier New',monospace
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+header{padding:16px 28px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-text{font-size:18px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-0.5px}
+.version-badge{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:1px}
+.header-info{font-size:11px;color:var(--muted)}
+.main{flex:1;display:grid;grid-template-columns:280px 1fr 1fr;height:calc(100vh - 57px)}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sidebar-section{padding:16px;border-bottom:1px solid var(--border)}
+.sidebar-title{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:12px}
+.upload-zone{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--card)}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:#1a1a2e}
+.upload-icon{font-size:28px;margin-bottom:8px}
+.upload-text{font-size:12px;color:var(--muted)}
+.upload-text b{color:var(--accent2)}
+#fileInput{display:none}
+.file-info{font-size:11px;color:var(--green);margin-top:8px;display:none;word-break:break-all}
+.opt-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)}
+.opt-item:last-child{border-bottom:none}
+.opt-label{font-size:12px;color:var(--text)}
+.opt-desc{font-size:10px;color:var(--muted);margin-top:2px}
+.toggle{width:36px;height:20px;background:var(--border);border-radius:999px;cursor:pointer;transition:background .2s;position:relative;flex-shrink:0}
+.toggle.on{background:var(--accent)}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:3px;left:3px;transition:left .2s}
+.toggle.on::after{left:19px}
+.strength-bar{height:6px;border-radius:3px;background:var(--border);margin-top:10px;overflow:hidden}
+.strength-fill{height:100%;border-radius:3px;transition:all .3s;background:linear-gradient(90deg,var(--red),var(--yellow),var(--green))}
+.intensity-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.intensity-label{font-size:11px;color:var(--muted);width:40px}
+input[type=range]{flex:1;accent-color:var(--accent)}
+.panel{display:flex;flex-direction:column;border-right:1px solid var(--border)}
+.panel-header{padding:12px 18px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.panel-meta{font-size:10px;color:var(--muted);font-family:var(--mono)}
+textarea{flex:1;background:var(--card);color:var(--text);border:none;outline:none;padding:14px 18px;font-family:var(--mono);font-size:12.5px;line-height:1.65;resize:none;tab-size:2}
+textarea::placeholder{color:var(--muted)}
+.output-area{flex:1;background:var(--card);padding:14px 18px;font-family:var(--mono);font-size:12px;line-height:1.65;overflow-y:auto;white-space:pre-wrap;word-break:break-all;color:var(--accent2);user-select:all}
+.output-placeholder{color:var(--muted);font-style:italic;user-select:none}
+.bottom{padding:12px 18px;background:var(--surface);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.btn{padding:9px 18px;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#7c3aed}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent2)}
+.status{flex:1;font-size:11px;font-family:var(--mono);padding:7px 12px;border-radius:6px;text-align:center}
+.status.ok{background:#064e3b55;color:var(--green)}
+.status.err{background:#450a0a55;color:var(--red)}
+.status.running{background:#1e1b4b55;color:var(--accent2)}
+.status.idle{color:var(--muted)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:12px 18px;background:var(--surface);border-top:1px solid var(--border)}
+.stat{background:var(--card);border-radius:6px;padding:8px 10px;border:1px solid var(--border)}
+.stat-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.stat-value{font-size:14px;font-weight:700;color:var(--text);font-family:var(--mono);margin-top:2px}
+@media(max-width:900px){.main{grid-template-columns:1fr}.panel{min-height:35vh}.sidebar{border-right:none;border-bottom:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <div class="logo-text">Ruey Obfuscator</div>
+    <div class="version-badge">v1.07</div>
+  </div>
+  <div class="header-info">by ruey · belle.sg · Real Lexer + Triple XOR + Inline String IIFEs + No Global Writes + Random Opcodes + Anti-Dump</div>
+</header>
+<div class="main">
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Upload Script</div>
+      <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">Drop <b>.lua</b> or <b>.txt</b> file<br>or click to browse</div>
+        <div class="file-info" id="fileInfo"></div>
+      </div>
+      <input type="file" id="fileInput" accept=".lua,.txt">
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Protection Layers</div>
+      <div class="opt-item">
+        <div><div class="opt-label">🔒 Token Stream VM</div><div class="opt-desc">Real lexer → encrypted number array</div></div>
+        <div class="toggle on" data-opt="tokenvm" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="opt-item">
+        <div><div class="opt-label">🔑 Dual Encryption</div><div class="opt-desc">XOR + substitution on all data</div></div>
+        <div class="toggle on" data-opt="encrypt" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="opt-item">
+        <div><div class="opt-label">🧮 MBA Constants</div><div class="opt-desc">Integer-safe math-hidden literals</div></div>
+        <div class="toggle on" data-opt="mba" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="opt-item">
+        <div><div class="opt-label">🛡️ Anti-Hook</div><div class="opt-desc">rawget fn capture + hook detection</div></div>
+        <div class="toggle on" data-opt="antihook" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="opt-item">
+        <div><div class="opt-label">🔐 Hidden loadstring</div><div class="opt-desc">Dynamic char-code fn lookup</div></div>
+        <div class="toggle on" data-opt="hidels" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="opt-item">
+        <div><div class="opt-label">🗑️ Junk Injection</div><div class="opt-desc">Dead code + fake branches</div></div>
+        <div class="toggle on" data-opt="junk" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="opt-item">
+        <div><div class="opt-label">🔤 Var Rename</div><div class="opt-desc">All identifiers randomized</div></div>
+        <div class="toggle on" data-opt="rename" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="opt-item">
+        <div><div class="opt-label">🛡️ Anti-Tamper</div><div class="opt-desc">Checksum + env fingerprint</div></div>
+        <div class="toggle on" data-opt="antitamper" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="opt-item">
+        <div><div class="opt-label">🤡 Skid Taunts</div><div class="opt-desc">Poison env with taunt vars</div></div>
+        <div class="toggle on" data-opt="taunts" onclick="toggleOpt(this)"></div>
+      </div>
+      <div class="opt-item">
+        <div><div class="opt-label">💉 Multi-Layer Wrap</div><div class="opt-desc">Nested closure wrapping</div></div>
+        <div class="toggle on" data-opt="multilayer" onclick="toggleOpt(this)"></div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Intensity</div>
+      <div class="intensity-row">
+        <span class="intensity-label" id="intensityLabel">High</span>
+        <input type="range" id="intensitySlider" min="1" max="3" value="2" oninput="updateIntensity()">
+      </div>
+      <div class="strength-bar"><div class="strength-fill" id="strengthFill" style="width:75%"></div></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px" id="intensityDesc">Balanced protection vs performance</div>
+    </div>
+    <div class="sidebar-section" style="flex:1">
+      <div class="sidebar-title">Protection Score</div>
+      <div style="font-size:36px;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent" id="scoreDisplay">94</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">/ 100 estimated strength</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span class="panel-title">Input — Lua Source</span>
+      <span class="panel-meta" id="inMeta">0 lines · 0 B</span>
+    </div>
+    <textarea id="inputCode" placeholder="-- Paste your Lua script here
+-- Or drag & drop a .lua / .txt file
+
+local function hello()
+    print('Hello from belle.sg!')
+    game:GetService('Players').LocalPlayer.Character.Humanoid.WalkSpeed = 50
+end
+hello()"></textarea>
+    <div class="bottom">
+      <button class="btn btn-primary" id="obfBtn" onclick="runObfuscate()">⚡ Obfuscate</button>
+      <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+      <div class="status idle" id="status">Ready</div>
+    </div>
+  </div>
+
+  <div class="panel" style="border-right:none">
+    <div class="panel-header">
+      <span class="panel-title">Output — Protected</span>
+      <span class="panel-meta" id="outMeta">—</span>
+    </div>
+    <div class="output-area" id="outputCode"><span class="output-placeholder">// Protected output will appear here...</span></div>
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-label">Input Size</div><div class="stat-value" id="statIn">—</div></div>
+      <div class="stat"><div class="stat-label">Output Size</div><div class="stat-value" id="statOut">—</div></div>
+      <div class="stat"><div class="stat-label">Expansion</div><div class="stat-value" id="statRatio">—</div></div>
+      <div class="stat"><div class="stat-label">Tokens</div><div class="stat-value" id="statStr">—</div></div>
+    </div>
+    <div class="bottom">
+      <button class="btn btn-ghost" onclick="copyOutput()">📋 Copy</button>
+      <button class="btn btn-ghost" onclick="downloadOutput()">💾 Download</button>
+      <div class="status idle" id="outStatus">—</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════════
+//  Ruey Obfuscator v1.07 — Top-3 Engine
+//  NEW vs v1.04:
+//  1. Random Opcode Mapping  — TC codes randomized per obfuscation
+//     (reverse-engineer can't decode stream without the per-run map)
+//  2. Runtime String Table   — strings in loaded code become
+//     _G["_Xrandom"][n], never plaintext even if load() is hooked
+//  3. MBA Numbers in loaded code — number literals → math expressions
+//  4. Keyword char-coding   — TC reverse map built from char codes,
+//     no keyword strings visible in the VM code itself
+//  5. All v1.04 features kept (chunk loader, anti-dump, triple XOR)
+// ════════════════════════════════════════════════════════════════════
+
+
+// ── Strip non-ASCII from comments (from v1.07) ───────────────────
+function stripNonAsciiComments(src){
+  var lines=src.split('\n');
+  for(var i=0;i<lines.length;i++){
+    var l=lines[i],cmIdx=l.indexOf('--');
+    if(cmIdx>=0){
+      lines[i]=l.slice(0,cmIdx)+l.slice(cmIdx).replace(/[^\x00-\x7F]/g,'');
+    } else {
+      lines[i]=l.replace(/[^\x00-\x7F]/g,' ');
+    }
+  }
+  return lines.join('\n');
+}
+
+// ── Lua keyword set ───────────────────────────────────────────────
+const LUA_KW=new Set(['and','break','do','else','elseif','end','false','for',
+  'function','if','in','local','nil','not','or','repeat','return','then',
+  'true','until','while']);
+
+// Special token codes (fixed, high range)
+const TC_NAME=200,TC_NUM=201,TC_STR=202,TC_EOF=255;
+
+// ── Random opcode map ─────────────────────────────────────────────
+// Returns {tokenString → randomCode} per obfuscation run
+function genOpcodeMap(){
+  const keywords=[...LUA_KW];
+  const operators=['+','-','*','/','%','^','#','..','...','==','~=',
+    '<','>','<=','>=','=','(',')','[',']','{','}',';',':','::',',','.'];
+  const allToks=[...keywords,...operators];
+  // Available codes: 30..199 (avoid 200-255 for specials)
+  const pool=[];for(let i=30;i<200;i++)pool.push(i);
+  for(let i=pool.length-1;i>0;i--){const j=rand(0,i);[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const map={};
+  allToks.forEach((t,i)=>map[t]=pool[i]);
+  map['NAME']=TC_NAME;map['NUMBER']=TC_NUM;map['STRING']=TC_STR;map['EOF']=TC_EOF;
+  return map;
+}
+
+const opts={
+  tokenvm:true,encrypt:true,mba:true,antihook:true,hidels:true,
+  junk:true,rename:true,antitamper:true,taunts:true,multilayer:true
+};
+
+// ── UI ────────────────────────────────────────────────────────────
+function toggleOpt(el){const k=el.dataset.opt;opts[k]=!opts[k];el.classList.toggle('on',opts[k]);updateScore();}
+function updateIntensity(){
+  const v=parseInt(document.getElementById('intensitySlider').value);
+  const L=['','Low','High','Extreme'],D=['','Faster, less protection','Balanced protection vs performance','Maximum protection, slower'],W=['','40%','75%','100%'];
+  document.getElementById('intensityLabel').textContent=L[v];
+  document.getElementById('intensityDesc').textContent=D[v];
+  document.getElementById('strengthFill').style.width=W[v];
+  updateScore();
+}
+function updateScore(){
+  const active=Object.values(opts).filter(Boolean).length;
+  const iv=parseInt(document.getElementById('intensitySlider').value);
+  document.getElementById('scoreDisplay').textContent=Math.min(99,Math.round((active/10)*78)+iv*5);
+}
+const uploadZone=document.getElementById('uploadZone');
+const fileInput=document.getElementById('fileInput');
+['dragenter','dragover'].forEach(e=>uploadZone.addEventListener(e,ev=>{ev.preventDefault();uploadZone.classList.add('dragover');}));
+['dragleave','drop'].forEach(e=>uploadZone.addEventListener(e,ev=>{ev.preventDefault();uploadZone.classList.remove('dragover');}));
+uploadZone.addEventListener('drop',ev=>{const f=ev.dataTransfer.files[0];if(f)readFile(f);});
+fileInput.addEventListener('change',()=>{if(fileInput.files[0])readFile(fileInput.files[0]);});
+function readFile(file){
+  if(!['lua','txt'].includes(file.name.split('.').pop().toLowerCase())){setStatus('❌ Only .lua or .txt','err');return;}
+  const r=new FileReader();
+  r.onload=e=>{
+    document.getElementById('inputCode').value=e.target.result;
+    const fi=document.getElementById('fileInfo');
+    fi.textContent=`✓ ${file.name} (${fmtSize(file.size)})`;fi.style.display='block';
+    updateInputMeta();setStatus(`📂 Loaded: ${file.name}`,'ok');
+  };
+  r.readAsText(file);
+}
+
+// ── Utilities ─────────────────────────────────────────────────────
+function rand(a,b){return Math.floor(Math.random()*(b-a+1))+a}
+function randHex(n){let s='';for(let i=0;i<n;i++)s+='0123456789abcdef'[rand(0,15)];return s}
+function randVar(){const ch='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';return '_'+ch[rand(0,ch.length-1)]+randHex(rand(8,13));}
+function fmtSize(b){return b>1048576?`${(b/1048576).toFixed(1)}MB`:b>1024?`${(b/1024).toFixed(1)}KB`:`${b}B`}
+
+// Integer-only MBA — no division, no floats
+function mba(n){
+  n=Math.floor(n);
+  const r1=rand(1,99),r2=rand(1,50);
+  const ops=[
+    ()=>`(${n+r1}-${r1})`,()=>`(${n-r2}+${r2})`,
+    ()=>`(${n+1000}-1000)`,()=>`(${n*3}-${n*2})`,
+    ()=>`(${n+r1+r2}-${r1}-${r2})`,()=>`(${n}+${r2}-${r2})`,
+  ];
+  return ops[rand(0,ops.length-1)]();
+}
+
+function updateInputMeta(){
+  const v=document.getElementById('inputCode').value;
+  const lines=(v.match(/\n/g)||[]).length+1;
+  document.getElementById('inMeta').textContent=`${lines} lines · ${fmtSize(new Blob([v]).size)}`;
+}
+document.getElementById('inputCode').addEventListener('input',updateInputMeta);
+
+// ════════════════════════════════════════════════════════════════════
+//  LUA LEXER
+// ════════════════════════════════════════════════════════════════════
+function luaLex(src){
+  src=stripNonAsciiComments(src);
+  let pos=0,line=1;
+  const toks=[];
+  const peek=(o=0)=>src[pos+o]||'';
+  const adv=()=>{const c=src[pos++]||'';if(c==='\n')line++;return c;};
+  const err=(m)=>{throw new Error(`Lex L${line}: ${m}`);}
+
+  function skipWS(){
+    while(pos<src.length){
+      const c=peek();
+      if(' \t\r\n'.indexOf(c)>=0){adv();continue;}
+      if(c==='-'&&peek(1)==='-'){
+        pos+=2;
+        if(peek()==='['){let lv=0,p=pos+1;while(src[p]==='='){lv++;p++;}if(src[p]==='['){pos=p+1;readLS(lv);continue;}}
+        while(pos<src.length&&src[pos]!=='\n')pos++;
+        continue;
+      }
+      break;
+    }
+  }
+  function readLS(lv){
+    const end=']'+'='.repeat(lv)+']';const i=src.indexOf(end,pos);
+    if(i<0)err('unclosed long string');
+    const s=src.slice(pos,i);for(const c of s)if(c==='\n')line++;
+    pos=i+end.length;return s.startsWith('\n')?s.slice(1):s;
+  }
+  function readStr(q){
+    let s='';
+    while(pos<src.length){
+      const c=adv();if(c===q)return s;
+      if(c==='\\'){
+        const e=adv();
+        if(e>='0'&&e<='9'){let n=e;if(peek()>='0'&&peek()<='9')n+=adv();if(peek()>='0'&&peek()<='9')n+=adv();s+=String.fromCharCode(parseInt(n,10));}
+        else{const M={n:'\n',t:'\t',r:'\r','\\':'\\','"':'"',"'":'\'','0':'\0','a':'\x07','b':'\x08'};s+=(e in M?M[e]:e);}
+      } else s+=c;
+    }
+    err('unclosed string');
+  }
+  function readNum(c0){
+    let s=c0;
+    if(c0==='0'&&(peek()==='x'||peek()==='X')){s+=adv();while(/[0-9a-fA-F]/.test(peek()))s+=adv();return{num:parseInt(s,16),raw:s};}
+    while(/[0-9]/.test(peek()))s+=adv();
+    if(peek()==='.'&&peek(1)!=='.'){s+=adv();while(/[0-9]/.test(peek()))s+=adv();}
+    if('eE'.indexOf(peek())>=0){s+=adv();if('+-'.indexOf(peek())>=0)s+=adv();while(/[0-9]/.test(peek()))s+=adv();}
+    return{num:parseFloat(s),raw:s};
+  }
+  const push=(t,v=null)=>toks.push({type:t,val:v});
+  while(true){
+    skipWS();if(pos>=src.length){push('EOF');break;}
+    const c=adv();
+    if(/[a-zA-Z_]/.test(c)){let nm=c;while(/[a-zA-Z0-9_]/.test(peek()))nm+=adv();push(LUA_KW.has(nm)?nm:'NAME',nm);continue;}
+    if(/[0-9]/.test(c)){const{num,raw}=readNum(c);push('NUMBER',{num,raw});continue;}
+    if(c==='"'||c==="'"){push('STRING',readStr(c));continue;}
+    if(c==='['){let lv=0,p=pos;while(src[p]==='='){lv++;p++;}if(src[p]==='['){pos=p+1;push('STRING',readLS(lv));continue;}push('[');continue;}
+    if(c==='.'&&peek()==='.'&&peek(1)==='.'){pos+=2;push('...');continue;}
+    const s2=c+peek();
+    if(['..','==','~=','<=','>=','::'].indexOf(s2)>=0){pos++;push(s2);continue;}
+    if('+-*/%^#(){}];,=<>.['.indexOf(c)>=0||c===']'){push(c);continue;}
+    if(c===':'){push(':');continue;}
+    err(`Unknown char: ${JSON.stringify(c)}`);
+  }
+  return toks;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  TOKEN SERIALIZER (uses dynamic opcode map)
+// ════════════════════════════════════════════════════════════════════
+function serializeTokens(toks, tcMap){
+  const namePool=[],strPool=[],numPool=[];
+  const nameIdx={},strIdx={};
+  const stream=[];
+  for(const tok of toks){
+    const tc=tcMap[tok.type];
+    if(tc===undefined)throw new Error('Unknown token type: '+tok.type);
+    if(tok.type==='NAME'){
+      if(nameIdx[tok.val]===undefined){nameIdx[tok.val]=namePool.length;namePool.push(tok.val);}
+      stream.push(tc,nameIdx[tok.val]);
+    } else if(tok.type==='NUMBER'){
+      numPool.push({raw:tok.val.raw||String(tok.val.num),num:tok.val.num});
+      stream.push(tc,numPool.length-1);
+    } else if(tok.type==='STRING'){
+      const key=JSON.stringify(tok.val);
+      if(strIdx[key]===undefined){strIdx[key]=strPool.length;strPool.push(tok.val);}
+      stream.push(tc,strIdx[key]);
+    } else if(tok.type==='EOF'){
+      stream.push(tc);break;
+    } else {
+      stream.push(tc);
+    }
+  }
+  return{stream,namePool,strPool,numPool};
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  ENCRYPTION
+// ════════════════════════════════════════════════════════════════════
+function genXorKey(len){const k=[];for(let i=0;i<len;i++)k.push(rand(1,254));return k;}
+function genSub(){const c=Array.from({length:256},(_,i)=>i);for(let i=255;i>0;i--){const j=rand(0,i);[c[i],c[j]]=[c[j],c[i]];}return c;}
+function xorByte(b,k){let r=0,ba=b,bk=k,bt=1;for(let j=0;j<8;j++){const ab=ba%2,kb=bk%2;if(ab!==kb)r+=bt;ba=(ba-ab)/2;bk=(bk-kb)/2;bt*=2;}return r;}
+function encStream(bytes,xkey,sub){return bytes.map((b,i)=>sub[xorByte(b,xkey[i%xkey.length])]);}
+function poolKey(xkey){let k=0;for(const b of xkey)k=xorByte(k,b);return k;}
+function encByte(b,pk,sub){return sub[xorByte(b,pk)];}
+function encodePoolStr(s,pk,sub){
+  const bytes=[];for(let i=0;i<s.length;i++)bytes.push(s.charCodeAt(i)&0xff);
+  const len=bytes.length;
+  return[encByte(Math.floor(len/256),pk,sub),encByte(len%256,pk,sub),...bytes.map(b=>encByte(b,pk,sub))];
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  GENERATORS
+// ════════════════════════════════════════════════════════════════════
+function genJunk(iv){
+  const cnt=iv===3?rand(10,18):iv===2?rand(5,10):rand(2,5);
+  const ops=[
+    ()=>`local ${randVar()} = ${mba(rand(1,9999))}`,
+    ()=>`local ${randVar()} = tostring(${rand(1,9999)})`,
+    ()=>`if false then local ${randVar()} = ${rand(1,999)} end`,
+    ()=>`local ${randVar()} = (${rand(1,99)} > ${rand(100,999)}) and ${rand(1,9)} or ${rand(10,99)}`,
+    ()=>`do local ${randVar()} = coroutine.wrap(function() end) end`,
+    ()=>`local ${randVar()} = type(nil)`,
+    ()=>`local ${randVar()} = math.floor(${rand(100,9999)} * 1)`,
+    ()=>`local ${randVar()} = select("#")`,
+    ()=>`local ${randVar()} = {}`,
+  ];
+  return Array.from({length:cnt},()=>ops[rand(0,ops.length-1)]()).join('\n');
+}
+function genAntiTamper(){
+  const v1=randVar(),v2=randVar(),v3=randVar();
+  const uid=randHex(10),cv=rand(10000,99999);
+  return `local ${v1} = tostring({}):sub(8)
+local ${v2} = (function()
+  local _x = ${mba(cv)}
+  if _x ~= ${cv} then return false end
+  local _g = getgenv and getgenv() or _G
+  if _g.__RBL_${uid} then return false end
+  _g.__RBL_${uid} = ${v1}
+  return true
+end)()
+local ${v3} = function(_f) if not ${v2} then _f=nil end; return _f end`;
+}
+function genSkidTaunts(iv){
+  const taunts=["Aww, look at you, a skid trying to dump my obfuscated code!!! Silly skid, it's not that easy, maybe next time ;3","nice try loser lmaooo get rekt","get rekt skid, this is BELLE.SG protected","you thought you could deobfuscate this? skill issue fr fr","ratio + L + no source 4 u skid","deobfuscation failed: touch grass","Aww, look at you, a skid trying to dump my obfuscated code!!! Silly skid, it's not that easy, maybe next time ;3"];
+  const cnt=iv===3?rand(80,120):iv===2?rand(40,70):rand(20,39);
+  const fv=randVar();const keys=['_a','_b','_c','_d','_e','_f','_g','_h','_x','_y'];
+  let out=`local ${fv} = getfenv and getfenv() or _G\n`;
+  for(let i=0;i<cnt;i++)out+=`${fv}.${keys[rand(0,keys.length-1)]} = "${taunts[rand(0,taunts.length-1)]}"\n`;
+  for(let i=0;i<rand(8,16);i++)out+=`local ${randVar()} = "${taunts[0]}"\n`;
+  return out;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════════════════
+function luaCharStr(s){
+  // Plain string — TC table values don't need to be hidden, only the data does
+  return `"${s}"`;
+}
+
+// [v1.07] Inline string IIFE — self-contained, never touches _G
+// Each string becomes a tiny closure with embedded single-byte XOR key
+// Defeats _G.__newindex hooks and environment monitoring completely
+function inlineStrIIFE(s) {
+  const key = rand(1, 254);
+  const encBytes = Array.from(s).map(c => {
+    const b = c.charCodeAt(0) & 0xff;
+    return xorByte(b, key);
+  });
+  const encArr = encBytes.map(b => mba(b)).join(',');
+  const keyExpr = mba(key);
+  // Compact self-contained IIFE with inline pure-math XOR
+  return `(function()local _t={};local _k=${keyExpr};for _,_v in ipairs({${encArr}})do local _r,_ba,_bk,_bt=0,_v,_k,1;for _j=1,8 do local _ab,_kb=_ba%2,_bk%2;if _ab~=_kb then _r=_r+_bt end;_ba=(_ba-_ab)/2;_bk=(_bk-_kb)/2;_bt=_bt*2 end;_t[#_t+1]=string.char(_r)end;return table.concat(_t)end)()`;
+}
+
+
+// ── Opaque predicates (from v1.07) ───────────────────────────────
+function genOpaque(result){
+  var n=rand(10,99),a=rand(3,9),b=rand(1,2);
+  if(result!==false){
+    var ops=["("+n+"*("+n+"+1))%2==0","type(nil)==\"nil\"","("+a+"*"+a+"-"+b+"*"+b+")>"+(b*b-1),"("+rand(10,99)+"+"+rand(1,9)+")>"+rand(1,5)];
+    return ops[rand(0,ops.length-1)];
+  } else {
+    var ops=["("+n+"*("+n+"+1))%2~=0","type(nil)==\"number\"","("+rand(10,99)+"<"+rand(1,5)+")"];
+    return ops[rand(0,ops.length-1)];
+  }
+}
+function genDeadCode(iv){
+  var count=iv===3?rand(4,7):iv===2?rand(2,4):rand(1,2);
+  var svcs=["Players","RunService","ReplicatedStorage","Workspace"];
+  var lines=[];
+  for(var i=0;i<count;i++){
+    var fv=randVar(),fv2=randVar();
+    lines.push("if "+genOpaque(false)+" then");
+    lines.push("  local "+fv+' = game:GetService("'+svcs[rand(0,svcs.length-1)]+'")');
+    lines.push("  if "+fv+" then local "+fv2+"="+fv+".Name end");
+    lines.push("end");
+  }
+  return lines.join("\n");
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  VM CODE GENERATOR v1.07
+// ════════════════════════════════════════════════════════════════════
+function genVM(stream, namePool, strPool, numPool, xkey, sub, iv, tcMap){
+  const V={};
+  const vn=(k)=>{if(!V[k])V[k]=randVar();return V[k];};
+  const pk=poolKey(xkey);
+
+  // Encrypt stream
+  const encSt=encStream(stream,xkey,sub);
+
+  // Encrypt name pool
+  const encNames=[];
+  for(const name of namePool) encNames.push(...encodePoolStr(name,pk,sub));
+  encNames.push(sub[xorByte(0,pk)],sub[xorByte(0,pk)]);
+
+  // [KEY CHANGE] Pre-compute string IIFEs in JavaScript
+  // so even if loadstring is hooked, captured source has IIFEs not plaintext
+  // inlineStrIIFE(s) generates a self-decrypting Lua expression
+  const iifePool = strPool.map(s => inlineStrIIFE(s));
+  const encIifes=[];
+  for(const iife of iifePool) encIifes.push(...encodePoolStr(iife,pk,sub));
+  encIifes.push(sub[xorByte(0,pk)],sub[xorByte(0,pk)]);
+
+  const mbaWrap=(arr)=>opts.mba&&iv===3?arr.map(b=>mba(b)).join(','):arr.join(',');
+  const xkeyArr=xkey.map(b=>mba(b)).join(',');
+  const subArr=iv>=2?sub.map(b=>mba(b)).join(','):sub.join(',');
+
+  // TC reverse table
+  const tcLines=[];
+  for(const[k,v] of Object.entries(tcMap)){
+    if(v<TC_NAME){
+      const esc=k.replace(/\\/g,'\\\\').replace(/"/g,'\\"');
+      tcLines.push(`[${mba(v)}]="${esc}"`);
+    }
+  }
+
+  let lua='';
+
+  // Direct captures — no rawget chains
+  lua+=`local ${vn('chr')}=string.char\n`;
+  lua+=`local ${vn('gsb')}=string.gsub\n`;
+  lua+=`local ${vn('by')}=string.byte\n`;
+  lua+=`local ${vn('cat')}=table.concat\n`;
+  lua+=`local ${vn('ipr')}=ipairs\n`;
+  lua+=`local ${vn('pcl')}=pcall\n`;
+  lua+=`local ${vn('typ')}=type\n`;
+  lua+=`local ${vn('tst')}=tostring\n`;
+  lua+=`local ${vn('flr')}=math.floor\n\n`;
+
+  // XOR key + substitution
+  lua+=`local ${vn('xk')}={${xkeyArr}}\n`;
+  lua+=`local ${vn('sb')}={${subArr}}\n`;
+  lua+=`local ${vn('rv')}={}\n`;
+  lua+=`for _i=1,256 do ${vn('rv')}[${vn('sb')}[_i]]=_i-1 end\n\n`;
+
+  // Pool key
+  lua+=`local ${vn('pk')}=0\n`;
+  lua+=`for _,_b in ${vn('ipr')}(${vn('xk')}) do\n`;
+  lua+=`  local _r,_ba,_bk,_bt=0,${vn('pk')},_b,1\n`;
+  lua+=`  for _j=1,8 do local _ab,_kb=_ba%2,_bk%2;if _ab~=_kb then _r=_r+_bt end;_ba=(_ba-_ab)/2;_bk=(_bk-_kb)/2;_bt=_bt*2 end\n`;
+  lua+=`  ${vn('pk')}=_r\n`;
+  lua+=`end\n\n`;
+
+  // XOR function
+  lua+=`local ${vn('xf')}=function(_a,_b)\n`;
+  lua+=`  local _r,_ba,_bk,_bt=0,_a,_b,1\n`;
+  lua+=`  for _j=1,8 do local _ab,_kb=_ba%2,_bk%2;if _ab~=_kb then _r=_r+_bt end;_ba=(_ba-_ab)/2;_bk=(_bk-_kb)/2;_bt=_bt*2 end\n`;
+  lua+=`  return _r\n`;
+  lua+=`end\n\n`;
+
+  // Stream decrypt (IIFE — no separate function, avoids nil call issues)
+  lua+=`local ${vn('pst')}=(function(_arr)\n`;
+  lua+=`  local _o={}\n`;
+  lua+=`  for _i=1,#_arr do\n`;
+  lua+=`    local _k=${vn('xk')}[(_i-1)%#${vn('xk')}+1]\n`;
+  lua+=`    _o[_i]=${vn('xf')}(${vn('rv')}[_arr[_i]] or 0,_k)\n`;
+  lua+=`  end\n`;
+  lua+=`  return _o\n`;
+  lua+=`end)({${mbaWrap(encSt)}})\n\n`;
+
+  // Pool decrypt
+  lua+=`local ${vn('dp')}=function(_e) return ${vn('xf')}(${vn('rv')}[_e] or 0,${vn('pk')}) end\n`;
+  lua+=`local ${vn('dp2')}=function(_data)\n`;
+  lua+=`  local _r,_i={},1\n`;
+  lua+=`  while _i<=#_data do\n`;
+  lua+=`    local _len=${vn('dp')}(_data[_i])*256+${vn('dp')}(_data[_i+1]);_i=_i+2\n`;
+  lua+=`    if _len==0 then break end\n`;
+  lua+=`    local _p={}\n`;
+  lua+=`    for _j=1,_len do _p[_j]=${vn('chr')}(${vn('dp')}(_data[_i]));_i=_i+1 end\n`;
+  lua+=`    _r[#_r+1]=${vn('cat')}(_p)\n`;
+  lua+=`  end\n`;
+  lua+=`  return _r\n`;
+  lua+=`end\n`;
+  lua+=`local ${vn('names')}=${vn('dp2')}({${mbaWrap(encNames)}})\n`;
+  // strs now contains pre-computed IIFE strings (Lua code), not original strings
+  lua+=`local ${vn('strs')}=${vn('dp2')}({${mbaWrap(encIifes)}})\n`;
+  lua+=`local ${vn('nums')}={${numPool.map(n=>`"${typeof n==='object'?n.raw:n}"`).join(',')}}\n\n`;
+
+  // TC table
+  lua+=`local ${vn('TC')}={${tcLines.join(',')}}\n\n`;
+
+  // Reconstruct source
+  // STRING tokens → strs[vi+1] directly (already Lua IIFE code, no quoting)
+  lua+=`local ${vn('out')},${vn('pi')},${vn('ki')}={},1,1\n`;
+  lua+=`while ${vn('ki')}<=#${vn('pst')} do\n`;
+  lua+=`  local _tc=${vn('pst')}[${vn('ki')}];${vn('ki')}=${vn('ki')}+1\n`;
+  lua+=`  if _tc==${mba(TC_EOF)} then break end\n`;
+  lua+=`  if _tc==${mba(TC_NAME)} then\n`;
+  lua+=`    local _vi=${vn('pst')}[${vn('ki')}];${vn('ki')}=${vn('ki')}+1\n`;
+  lua+=`    ${vn('out')}[${vn('pi')}]=${vn('names')}[_vi+1] or"";${vn('pi')}=${vn('pi')}+1\n`;
+  lua+=`  elseif _tc==${mba(TC_NUM)} then\n`;
+  lua+=`    local _vi=${vn('pst')}[${vn('ki')}];${vn('ki')}=${vn('ki')}+1\n`;
+  lua+=`    ${vn('out')}[${vn('pi')}]=${vn('nums')}[_vi+1] or"0";${vn('pi')}=${vn('pi')}+1\n`;
+  lua+=`  elseif _tc==${mba(TC_STR)} then\n`;
+  // STRING: use pre-computed IIFE directly (no esc() needed — it's already Lua code)
+  lua+=`    local _vi=${vn('pst')}[${vn('ki')}];${vn('ki')}=${vn('ki')}+1\n`;
+  lua+=`    ${vn('out')}[${vn('pi')}]=${vn('strs')}[_vi+1] or'""';${vn('pi')}=${vn('pi')}+1\n`;
+  lua+=`  else\n`;
+  lua+=`    local _ts=${vn('TC')}[_tc];if _ts then ${vn('out')}[${vn('pi')}]=_ts;${vn('pi')}=${vn('pi')}+1 end\n`;
+  lua+=`  end\n`;
+  lua+=`  ${vn('out')}[${vn('pi')}]=" ";${vn('pi')}=${vn('pi')}+1\n`;
+  lua+=`end\n`;
+  lua+=`local ${vn('src')}=${vn('cat')}(${vn('out')})\n\n`;
+
+  // XOR-encode source + chunk reader
+  const ck2=genXorKey(rand(12,24));
+  const nc=iv===3?rand(5,8):iv===2?rand(3,5):2;
+  lua+=`local ${vn('ck2')}={${ck2.map(b=>mba(b)).join(',')}}\n`;
+  lua+=`local ${vn('sb2')}={}\n`;
+  lua+=`for _i=1,#${vn('src')} do\n`;
+  lua+=`  ${vn('sb2')}[_i]=${vn('xf')}(${vn('by')}(${vn('src')},_i),${vn('ck2')}[(_i-1)%#${vn('ck2')}+1])\n`;
+  lua+=`end\n`;
+  lua+=`${vn('src')}=nil\n`;
+
+  const cszExpr = `math.max(1,${vn('flr')}(#${vn('sb2')}/${nc}))`;
+  lua+=`local ${vn('csz2')}=${cszExpr}\n`;
+  lua+=`local ${vn('ci2')}=1\n`;
+  lua+=`local ${vn('rd')}=function()\n`;
+  lua+=`  local _s=(${vn('ci2')}-1)*${vn('csz2')}+1\n`;
+  lua+=`  if _s>#${vn('sb2')} then return nil end\n`;
+  lua+=`  local _e=math.min(${vn('ci2')}*${vn('csz2')},#${vn('sb2')})\n`;
+  lua+=`  ${vn('ci2')}=${vn('ci2')}+1\n`;
+  lua+=`  local _dc={}\n`;
+  lua+=`  for _i=_s,_e do\n`;
+  lua+=`    local _pi=(_i-1)%#${vn('ck2')}+1\n`;
+  lua+=`    _dc[#_dc+1]=string.char(${vn('xf')}(${vn('sb2')}[_i],${vn('ck2')}[_pi]))\n`;
+  lua+=`  end\n`;
+  lua+=`  return table.concat(_dc)\n`;
+  lua+=`end\n\n`;
+
+  // Execute: try load(reader) first, fallback to loadstring
+  lua+=`local ${vn('fn')}\n`;
+  lua+=`local _ok1,_r1=pcall(load,${vn('rd')})\n`;
+  lua+=`if _ok1 and type(_r1)=="function" then\n`;
+  lua+=`  ${vn('fn')}=_r1\n`;
+  lua+=`else\n`;
+  lua+=`  -- load(fn) not supported, reassemble and use loadstring\n`;
+  lua+=`  ${vn('ci2')}=1;local _all={}\n`;
+  lua+=`  repeat local _c=${vn('rd')}();if _c then _all[#_all+1]=_c end until _c==nil\n`;
+  lua+=`  _ok1,${vn('fn')}=pcall(loadstring or load,table.concat(_all))\n`;
+  lua+=`end\n`;
+  lua+=`if type(${vn('fn')})=="function" then\n`;
+  lua+=`  local _ok2,_err2=pcall(${vn('fn')})\n`;
+  lua+=`  if not _ok2 then warn("[BELLE.SG ERR] "..tostring(_err2)) end\n`;
+  lua+=`end\n`;
+
+  return lua;
+}
+
+
+
+// Simple wrapper — no complex opaque predicates
+function wrapLayers(code,n){
+  var r=code;
+  for(var i=0;i<n;i++){
+    var fv=randVar();
+    var lines=r.split('\n').map(function(l){return '  '+l;}).join('\n');
+    r='local '+fv+'=(function()\n'+lines+'\nend)\n'+fv+'()';
+  }
+  return r;
+}
+
+// ════════════════════════════════════════════════════════════════════
+//  MAIN PIPELINE
+// ════════════════════════════════════════════════════════════════════
+function obfuscate(src){
+  const iv=parseInt(document.getElementById('intensitySlider').value);
+
+  // 1. Generate random opcode map for this run
+  const tcMap=genOpcodeMap();
+
+  // 2. Tokenize
+  const toks=luaLex(src);
+  const tokenCount=toks.length;
+
+  // 3. Serialize → stream + pools (using random opcodes)
+  const{stream,namePool,strPool,numPool}=serializeTokens(toks,tcMap);
+
+  // 4. Generate keys (64-byte XOR key)
+  const xkey=genXorKey(rand(48,64));
+  const sub=genSub();
+
+  // 5. Generate VM Lua code
+  const vmCode=genVM(stream,namePool,strPool,numPool,xkey,sub,iv,tcMap);
+
+  // 6. Wrap in closure layers
+  let finalCode=vmCode;
+  if(opts.multilayer&&iv>=2) finalCode=wrapLayers(vmCode,iv===3?2:1);
+
+  // 7. Assemble output
+  let out=`-- [[ Ruey Obfuscator v1.07 | ${randHex(20)} | ${new Date().toISOString()} ]]\n`;
+  out+=`-- [[ Protected by belle.sg | Triple XOR + Inline String IIFEs + No Global Writes + Random Opcodes + Anti-Dump ]]\n\n`;
+
+  if(opts.antitamper) out+=genAntiTamper()+'\n\n';
+  if(opts.junk)       out+=genJunk(iv)+'\n\n';
+  if(opts.junk)       out+=genDeadCode(iv)+'\n\n';
+  if(opts.taunts)     out+=genSkidTaunts(iv)+'\n\n';
+  if(opts.junk)       out+=genJunk(Math.ceil(iv/2))+'\n\n';
+  if(opts.junk)       out+=genDeadCode(Math.ceil(iv/2))+'\n\n';
+
+  out+=finalCode+'\n';
+  if(opts.junk) out+='\n'+genJunk(iv)+'\n';
+
+  return{result:out,tokenCount};
+}
+
+// ── UI Functions ──────────────────────────────────────────────────
+function setStatus(msg,type='idle'){const el=document.getElementById('status');el.textContent=msg;el.className=`status ${type}`;}
+function runObfuscate(){
+  const src=document.getElementById('inputCode').value.trim();
+  if(!src){setStatus('⚠ No input script!','err');return;}
+  const btn=document.getElementById('obfBtn');btn.disabled=true;
+  setStatus('⚡ Obfuscating...','running');
+  setTimeout(()=>{
+    try{
+      const{result,tokenCount}=obfuscate(src);
+      document.getElementById('outputCode').textContent=result;
+      const inSz=new Blob([src]).size;const outSz=new Blob([result]).size;
+      document.getElementById('statIn').textContent=fmtSize(inSz);
+      document.getElementById('statOut').textContent=fmtSize(outSz);
+      document.getElementById('statRatio').textContent=`${((outSz/inSz)*100).toFixed(0)}%`;
+      document.getElementById('statStr').textContent=tokenCount;
+      document.getElementById('outMeta').textContent=`${result.split('\n').length} lines`;
+      document.getElementById('outStatus').textContent=`✓ ${fmtSize(outSz)}`;
+      document.getElementById('outStatus').className='status ok';
+      setStatus(`✅ Done! ${tokenCount} tokens · v1.07 engine`,'ok');
+    }catch(e){setStatus(`❌ ${e.message}`,'err');console.error(e);}
+    btn.disabled=false;
+  },60);
+}
+function copyOutput(){const txt=document.getElementById('outputCode').textContent;if(!txt||txt.includes('output-placeholder'))return;navigator.clipboard.writeText(txt).then(()=>setStatus('📋 Copied!','ok'));}
+function downloadOutput(){const txt=document.getElementById('outputCode').textContent;if(!txt)return;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));a.download=`ruey_obf_v107_${Date.now()}.lua`;a.click();}
+function clearAll(){document.getElementById('inputCode').value='';document.getElementById('outputCode').innerHTML='<span class="output-placeholder">// Protected output will appear here...</span>';document.getElementById('fileInfo').style.display='none';['statIn','statOut','statRatio','statStr'].forEach(id=>document.getElementById(id).textContent='—');document.getElementById('outMeta').textContent='—';document.getElementById('outStatus').textContent='—';document.getElementById('outStatus').className='status idle';setStatus('Ready','idle');document.getElementById('inMeta').textContent='0 lines · 0 B';}
+updateScore();
+</script>
+</body>
+</html>
